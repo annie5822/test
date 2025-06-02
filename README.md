@@ -35,11 +35,11 @@ Cache 結構初始化與參數設計（sets:ways:linesz）
 
 ## Q : Describe the concept behind your modified matrix multiplication algorithm.
 首先，將矩陣 b 進行轉置，以改善記憶體存取模式。
-原本對 a 是以 row-major（連續記憶體）方式讀取，具備良好的空間區域性；但對 b 的訪問則是 column-wise（跨行），容易導致 frequent cache miss。透過轉置 b，將其存取方向改為 row-wise，進而提升 cache line 使用效率與命中率。
+原本對 a 是以 row-major 方式讀取，具備良好的空間區域性；但對 b 的訪問則是 column-wise，容易導致 frequent cache miss。透過轉置 b，將其存取方向改為 row-wise，進而提升 cache line 使用效率與命中率。
 
-接著，採用 Blocking（區塊化） 技術，將矩陣運算拆分為小區塊，提升 L1 cache 的資料重用率，避免在處理大矩陣時造成 cache thrashing。這種區塊內部計算能讓 a、b_t、output 的 working set 控制在 cache 容量內，提高 temporal 與 spatial locality。
+接著，採用 Blocking 技術，將矩陣運算拆分為小區塊，提升 L1 cache 的資料重用率，避免在處理大矩陣時造成 cache thrashing。這種區塊內部計算能讓 a、b_t、output 的 working set 控制在 cache 容量內，提高 temporal 與 spatial locality。
 
-此外，在乘法累加的過程中，先使用暫存變數進行區塊內加總，最後再寫回 output 矩陣，可減少對記憶體的寫入次數，降低寫回開銷並避免 cache line 的頻繁失效。
+此外，在乘法累加的過程中，先使用暫存變數進行區塊內加總，最後再寫回 output 矩陣，可減少對記憶體的寫入次數，降低寫回開銷並避免 cache line 的頻繁 miss 的情況。
 
 ## Q : Describe the concept behind your design philosophy of previous Assignment I and Assignment II.
 
