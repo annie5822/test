@@ -1,5 +1,6 @@
 # HW3
 The biggest challenge I faced in this assignment was not knowing how to update the modified code. Later, I realized that I needed to run make again to apply the updates. In Exercise 2 of this assignment, I also learned how to use the blocking technique to reduce cache misses.
+作業1的部份把快取的替換策略從原本的隨機策略，變成了先進先出（FIFO）的方式。對 set-associative cache 來說，它加了一個 fifo_ptr 陣列，用來記住每組下一個該被替換的欄位（way）在哪，每次替換完就往下移一格，照順序循環。至於 fully associative cache ，則是用一個 queue 來記住資料加入的順序，只要超過容量，就把最早進來的那個踢掉。這樣就可以讓整個替換流程更有規律、也比較好預測。
 
 ## Q : Describe the workflow and mechanism in Spike, related to cache simulation.
 
