@@ -1,31 +1,126 @@
 # HW3
 The biggest challenge I faced in this assignment was not knowing how to update the modified code. Later, I realized that I needed to run make again to apply the updates. In Exercise 2 of this assignment, I also learned how to use the blocking technique to reduce cache misses.
+
 作業1的部份把快取的替換策略從原本的隨機策略，變成了先進先出（FIFO）的方式。對 set-associative cache 來說，它加了一個 fifo_ptr 陣列，用來記住每組下一個該被替換的欄位（way）在哪，每次替換完就往下移一格，照順序循環。至於 fully associative cache ，則是用一個 queue 來記住資料加入的順序，只要超過容量，就把最早進來的那個踢掉。這樣就可以讓整個替換流程更有規律、也比較好預測。
 
 ## Q : Describe the workflow and mechanism in Spike, related to cache simulation.
 
-在 Spike 模擬器中，快取模擬（cache simulation）透過 cache_sim_t 這個類別實現，目的是模擬處理器在執行過程中讀寫記憶體時與 L1 cache 互動的情況。整體模擬流程如下：
+# Spike Cache Simulator README
 
-記憶體操作攔截（Trace）
-當 Spike 執行一個指令導致 LOAD、STORE 或 FETCH 操作時，這些操作會被繼承自 memtracer_t 的類別（如 dcache_sim_t 和 icache_sim_t）所攔截。只有當存取類型符合該 cache（例如：FETCH 對 I-cache，LOAD/STORE 對 D-cache）時，才會進行後續模擬。
+Spike 的模擬環境中，快取模擬（Cache Simulation） 是藉由 `cachesim.h` 和 `cachesim.cc` 中的類別與方法來完成的。其工作流程與機制主要分為以下幾個部分，涵蓋記憶體訪問攔截、cache 行為模擬、替換策略、統計紀錄等。
 
-檢查是否命中（check_tag）
-Cache 模擬器會根據 address 進行 tag 與 index 計算，並從 tags[] 陣列中尋找是否已有相符區塊（代表命中 hit）。若找不到則視為 cache miss。
+---
 
-替換策略（victimize）
-若發生 miss，模擬器會根據 FIFO 規則選出一個要替換的區塊（victim），此資訊由 fifo_ptr[] 控制。新的資料會寫入該位置。
+##  1. 快取模擬架構 (Cache Simulation Framework)
 
-處理寫回與遞迴存取（writeback & miss handler）
-若被替換的區塊為 dirty（曾經寫入過），模擬器會對更下一層記憶體（通常是另一層 cache 或 main memory）做 write-back 操作。這透過 miss_handler 機制實現遞迴模擬階層式記憶體。
+Spike 的快取模擬架構採物件導向方式設計，包含以下幾個類別：
 
-統計記錄與顯示（print_stats）
-模擬期間，模擬器會記錄讀寫次數、miss 次數、bytes 傳輸量、write-back 次數等統計資料，最終透過 print_stats() 輸出結果。這些數據有助於計算 cache miss 率與記憶體存取延遲。
+| 類別名稱                | 功能描述                                                |
+| ------------------- | --------------------------------------------------- |
+| `cache_sim_t`       | 一般組合快取模擬 (支援 direct-mapped 與 set-associative cache) |
+| `fa_cache_sim_t`    | 完全相連快取 (Fully-Associative Cache)                    |
+| `cache_memtracer_t` | 快取與記憶體追蹤器整合類別                                       |
+| `icache_sim_t`      | 指令快取模擬                                              |
+| `dcache_sim_t`      | 資料快取模擬                                              |
+| `lfsr_t`            | 線性回饋暫存器 (預設為 FIFO)                                  |
 
-Cache 結構初始化與參數設計（sets:ways:linesz）
-使用者可透過字串（例如 "8:4:32"）設定 cache 的組數、associativity（相聯度）、與 block size。系統會驗證參數是否為 2 的次方等合法條件，並設定 internal tag array 與相關索引。
+---
 
-完全相聯快取（Fully-Associative Cache）處理
-當 cache 為完全相聯（如 1 組、8 way），模擬器會自動轉為使用 fa_cache_sim_t 類別，其內部以 std::map 和 queue 管理資料，不使用固定 index。
+##  2. 工作流程 (Workflow)
+
+###  Step 1: 建立 Cache 模擬器
+
+```cpp
+cache_sim_t::construct(config_str, name);
+```
+
+* 例如: `"64:4:32"` 表示 64 組、4-way、block size 32
+* 若 sets = 1 且 ways > 4 則建 fa\_cache\_sim\_t
+* 否則預設為 cache\_sim\_t
+
+###  Step 2: 攜得記憶體操作
+
+```cpp
+trace(addr, size, type);
+```
+
+* `FETCH` 傳給 icache
+* `LOAD/STORE` 傳給 dcache
+
+###  Step 3: 模擬 cache 存取
+
+```cpp
+cache_sim_t::access(addr, size, is_store);
+```
+
+* 判斷 hit/miss (使用 `check_tag()`)
+* miss 時:
+
+  * 執行替換 (使用 `victimize()`)
+  * 如 victim 為 dirty 則執行寫回
+  * 若有下一層 cache 則 access
+  * 寫入操作時設定 dirty bit
+
+---
+
+##  3. 模擬細節與位址處理
+
+###  標籤與組指數計算
+
+```cpp
+idx = (addr >> idx_shift) & (sets - 1);
+tag = (addr >> idx_shift) | VALID;
+```
+
+* `idx_shift` 由 block size 決定 (例如 block = 32 則 shift 5 bits)
+* `tag` 為在 tags array 中找尋命中的關鍵
+
+---
+
+##  4. 統計數據與輸出
+
+使用 `print_stats()` 展示預算效能:
+
+| 指標               | 說明                          |
+| ---------------- | --------------------------- |
+| `read_accesses`  | 讀取次數                        |
+| `write_accesses` | 寫入次數                        |
+| `read_misses`    | 讀取 miss 次數                  |
+| `write_misses`   | 寫入 miss 次數                  |
+| `bytes_read`     | 讀取總使用位元組                    |
+| `bytes_written`  | 寫入總使用位元組                    |
+| `writebacks`     | 寫回次數 (dirty 被替換)            |
+| `miss rate`      | (總 miss / 總 access) \* 100% |
+
+---
+
+##  5. 快取替換策略
+
+###  `cache_sim_t`
+
+* 各 set 維持 FIFO 指鏈 `fifo_ptr`
+* victim 被替換 tag (設 VALID bit)
+* dirty 則寫回
+
+###  `fa_cache_sim_t`
+
+* 使用 `std::map` 儲存 tag
+* FIFO queue 控制替換順序
+* 如容量滿，pop 最舊入項
+
+---
+
+##  6. 清除與失效 (clean\_invalidate)
+
+```cpp
+clean_invalidate(addr, size, clean, invalidate);
+```
+
+* `clean = true` 則 dirty 寫回
+* `invalidate = true` 則清除 valid bit
+* 模擬 cache flush/記憶體一致性操作
+
+---
 
 ## Q : Describe the concept behind your modified matrix transpose algorithm.
 這段程式的設計核心在於改良矩陣轉置演算法，採用 Blocking 技術 將 n×n 矩陣切分為多個 16×16 的小區塊，在每個區塊內局部完成轉置操作。此設計目的是讓目前操作的資料集中落在 L1 cache 中，提升記憶體的 spatial locality（空間區域性） 與 temporal locality（時間區域性），有效降低 cache miss 機率並提升存取效率。
