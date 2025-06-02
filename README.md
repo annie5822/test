@@ -52,6 +52,8 @@ array_search.c 的設計說明：
 此程式設計目的是搜尋一個整數陣列中是否存在指定的目標值（target），採用線性搜尋法（Linear Search）逐一比對每個元素，並找出目標所在的 index。
 
 linked_list_sort.c 的設計說明：
-splitlist用雙指標
+splitList 是將原始 linked list 平均分成兩半，以利後續進行遞迴式的 merge sort 操作。其核心概念是使用「fast & slow pointers」來找出中間節點，其中 slow 每次前進一格，fast 每次前進兩格，當 fast 或 fast->next 為 NULL 時，slow 剛好停在中間。此時可將 slow->next 作為第二段 list 的開頭（*secondHalf = slow->next），並將 slow->next 設為 NULL 來斷開連結，確保第一段 list（*firstHalf = head）與第二段彼此獨立。若原 list 為空或僅有一個節點，則直接將 *firstHalf 指向 head，*secondHalf 設為 NULL 即可。此設計的關鍵在於利用 fast 指標快速達到尾端，讓 slow 停在中間以實現高效分割。
+
+mergesortedlists則是透過比較兩條已排序的 linked list中節點的資料值，逐步合併成一條新的有序 linked list。程式一開始處理邊界情況，若其中一條為空，則直接回傳另一條；否則透過比較 a->data 與 b->data 的大小，決定哪個節點作為結果 list 的開頭。接著利用 tail 指標追蹤目前合併結果的尾端，進入迴圈反覆比較兩個 list 的當前節點資料值，將較小者接到 tail 之後，並持續前進。當任一條 list 遍歷完後，將尚未處理完的另一條直接串接至 tail，使整個合併過程完整且高效。
 
 HW2
