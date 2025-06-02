@@ -27,12 +27,11 @@ Cache 結構初始化與參數設計（sets:ways:linesz）
 當 cache 為完全相聯（如 1 組、8 way），模擬器會自動轉為使用 fa_cache_sim_t 類別，其內部以 std::map 和 queue 管理資料，不使用固定 index。
 
 ## Q : Describe the concept behind your modified matrix transpose algorithm.
-改良矩陣轉置演算法的核心觀念是 Blocking。
-首先將 n × n 矩陣切分為 16×16 的小區塊，在每個區塊內局部完成轉置。這樣設計的目的是讓目前操作的資料集中落在 L1 cache 中，有效提升spatial locality 及 temporal locality。
+這段程式的設計核心在於改良矩陣轉置演算法，採用 Blocking 技術 將 n×n 矩陣切分為多個 16×16 的小區塊，在每個區塊內局部完成轉置操作。此設計目的是讓目前操作的資料集中落在 L1 cache 中，提升記憶體的 spatial locality（空間區域性） 與 temporal locality（時間區域性），有效降低 cache miss 機率並提升存取效率。
 
-每個 16×16 的 int 區塊大小為 16×16×4 = 1024 bytes（1KB），剛好等於快取容量（8 sets × 4 ways × 32B = 1024B），保證整個區塊能完整 fit 進 L1 cache，且同一組最多只會佔用 4 個 way，避免不必要的替換。
+在區塊內，程式進一步使用 2×2 微區塊化策略來提升效能。透過兩層 for 迴圈搭配每次搬移 4 個元素（b_00, b_01, b_10, b_11），不僅減少 index 計算與迴圈控制開銷，也提高 cache line 的使用效率。
 
-接著在區塊內使用 微區塊化（2×2 子區塊 + 迴圈展開） 的策略，進一步提升 cache line 的使用率。因為每條 cache line 為 32B，可容納 8 個 int，若只單一訪問一個元素將造成空間浪費。而 2×2 微區塊一次搬移 4 個元素（2 行 × 2 列），可充分利用 2 條 cache line 的資料，並透過 loop unrolling 降低迴圈控制開銷，提升執行效率與 pipeline 的 issue rate。
+此外，為避免處理矩陣邊界時發生記憶體越界錯誤，程式加入條件檢查 x + 1 < n 與 y + 1 < n，例如當 n = 17 且 x = 16 時，x + 1 = 17 會導致存取 src[17 * n + y]，超出合法範圍而產生錯誤。
 
 ## Q : Describe the concept behind your modified matrix multiplication algorithm.
 首先，將矩陣 b 進行轉置，以改善記憶體存取模式。
