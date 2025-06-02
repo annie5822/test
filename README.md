@@ -43,14 +43,15 @@ Q : Describe the concept behind your modified matrix multiplication algorithm.
 此外，在乘法累加的過程中，先使用暫存變數進行區塊內加總，最後再寫回 output 矩陣，可減少對記憶體的寫入次數，降低寫回開銷並避免 cache line 的頻繁失效。
 
 Q : Describe the concept behind your design philosophy of previous Assignment I and Assignment II.
+
 HW1
 array_sort.c 的設計說明：
-本程式實作了針對固定大小整數陣列的排序功能，使用的是泡沫排序法（Bubble Sort），透過兩層迴圈依序比較並交換相鄰元素，以將陣列由小排到大。特別之處在於程式中加入了 RISC-V 的 inline assembly 組語，將交換的動作以暫存器方式實作，使得交換的邏輯更接近實際硬體層級的運作。此外，程式使用指標（pointer）來操作陣列元素位置，進一步強化對底層記憶體操作方式的掌握。
+此程式實作了針對固定大小整數陣列的排序功能，使用的是 Bubble Sort，透過兩層迴圈依序比較並交換相鄰元素，以將陣列由小排到大。
 
 array_search.c 的設計說明：
-本程式設計目的是搜尋一個整數陣列中是否存在指定的目標值（target），採用線性搜尋法（Linear Search）逐一比對每個元素，並找出目標所在的 index。搜尋的過程完全透過 RISC-V inline assembly 撰寫，包含 index 累加、陣列元素存取、與目標比對等，皆以暫存器與指令模擬。此設計不僅加深對組語語意的理解，也強調在處理記憶體與指標運算時的細節處理，實用於低階系統的基礎訓練。
+此程式設計目的是搜尋一個整數陣列中是否存在指定的目標值（target），採用線性搜尋法（Linear Search）逐一比對每個元素，並找出目標所在的 index。
 
 linked_list_sort.c 的設計說明：
-此程式針對單向鏈結串列（Singly Linked List）實作排序功能，同樣採用泡沫排序法來排序節點中的數值（val）。設計上不對節點本身的位置或指標重新連接，而是僅交換兩個相鄰節點的數值欄位，避免因 pointer 操作錯誤導致鏈結錯亂。數值交換部分以 RISC-V inline assembly 撰寫，操作指標所對應的記憶體位址，完成兩個節點數值的對調。此設計展示了在 linked list 上進行資料操作時的細緻控制與安全性思考。
+splitlist用雙指標
 
 HW2
