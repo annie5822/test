@@ -2,6 +2,7 @@
 The biggest challenge I faced in this assignment was not knowing how to update the modified code. Later, I realized that I needed to run make again to apply the updates. In Exercise 2 of this assignment, I also learned how to use the blocking technique to reduce cache misses.
 
 Q : Describe the workflow and mechanism in Spike, related to cache simulation.
+
 在 Spike 模擬器中，快取模擬（cache simulation）透過 cache_sim_t 這個類別實現，目的是模擬處理器在執行過程中讀寫記憶體時與 L1 cache 互動的情況。整體模擬流程如下：
 
 記憶體操作攔截（Trace）
