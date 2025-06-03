@@ -7,7 +7,7 @@ The biggest challenge I faced in this assignment was not knowing how to update t
 
 # Spike Cache Simulator README
 
-Spike 的模擬環境中，快取模擬（Cache Simulation） 是藉由 `cachesim.h` 和 `cachesim.cc` 中的類別與方法來完成的。其工作流程與機制主要分為以下幾個部分，涵蓋記憶體訪問攔截、cache 行為模擬、替換策略、統計紀錄等。
+Spike 的模擬環境中，Cache Simulation 是藉由 `cachesim.h` 和 `cachesim.cc` 中的類別與方法來完成的。其工作流程與機制主要分為以下幾個部分，涵蓋記憶體訪問攔截（memory access interception）、cache 行為模擬、替換策略、統計紀錄等。
 
 ---
 
@@ -22,7 +22,7 @@ Spike 的快取模擬架構採物件導向方式設計，包含以下幾個類�
 | `cache_memtracer_t` | 快取與記憶體追蹤器整合類別                                       |
 | `icache_sim_t`      | 指令快取模擬                                              |
 | `dcache_sim_t`      | 資料快取模擬                                              |
-| `lfsr_t`            | 線性回饋暫存器 (預設為 FIFO)                                  |
+| `lfsr_t`            | 實作隨機替換策略的選擇                                 |
 
 ---
 
@@ -35,8 +35,7 @@ cache_sim_t::construct(config_str, name);
 ```
 
 * 例如: `"64:4:32"` 表示 64 組、4-way、block size 32
-* 若 sets = 1 且 ways > 4 則建 fa\_cache\_sim\_t
-* 否則預設為 cache\_sim\_t
+
 
 ###  Step 2: 攜得記憶體操作
 
@@ -73,7 +72,6 @@ tag = (addr >> idx_shift) | VALID;
 ```
 
 * `idx_shift` 由 block size 決定 (例如 block = 32 則 shift 5 bits)
-* `tag` 為在 tags array 中找尋命中的關鍵
 
 ---
 
@@ -106,7 +104,7 @@ tag = (addr >> idx_shift) | VALID;
 
 * 使用 `std::map` 儲存 tag
 * FIFO queue 控制替換順序
-* 如容量滿，pop 最舊入項
+* 如容量滿，pop 最舊的一項
 
 ---
 
